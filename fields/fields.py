@@ -1,5 +1,6 @@
 from datetime import timedelta
 from mongoengine.base import BaseField
+from mongoengine.fields import StringField, EmailField
 
 import os
 import datetime
@@ -18,7 +19,7 @@ class TimedeltaField(BaseField):
 
     Looks to the outside world like a datatime.timedelta, but stores
     in the database as an integer (or float) number of seconds.
-    
+
     """
     def validate(self, value):
         if not isinstance(value, (timedelta, int, float)):
@@ -53,11 +54,11 @@ class TimedeltaField(BaseField):
 
 
 class LocalStorageFileField(BaseField):
-    
+
     proxy_class = FieldFile
 
     def __init__(self,
-                 db_alias=DEFAULT_CONNECTION_NAME, 
+                 db_alias=DEFAULT_CONNECTION_NAME,
                  name=None,
                  upload_to='',
                  storage=None,
@@ -93,7 +94,7 @@ class LocalStorageFileField(BaseField):
             file.instance = instance
             file.field = self
             file.storage = self.storage
- 
+
         return instance._data[self.name]
 
 
@@ -122,11 +123,33 @@ class LocalStorageFileField(BaseField):
             value.save(value.name, value)
             return value.path
 
-        return value.name    
+        return value.name
 
 
     def to_python(self, value):
         eu = self
         return eu.proxy_class(eu.owner_document, eu, value)
 
+
+class LowerStringField(StringField):
+    def __set__(self, instance, value):
+        value = self.to_python(value)
+        return super(LowerStringField, self).__set__(instance, value)
+
+    def to_python(self, value):
+        if value:
+            value = value.lower()
+        return value
+
+    def prepare_query_value(self, op, value):
+        value = value.lower() if value else value
+        return super(LowerStringField, self).prepare_query_value(op, value)
+
+
+class LowerEmailField(LowerStringField):
+
+    def validate(self, value):
+        if not EmailField.EMAIL_REGEX.match(value):
+            self.error('Invalid Mail-address: %s' % value)
+        super(LowerEmailField, self).validate(value)
 
