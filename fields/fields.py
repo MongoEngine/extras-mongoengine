@@ -53,7 +53,7 @@ class TimedeltaField(BaseField):
                    (value.microseconds / 1000000.0)
 
 
-class LocalImageField(BaseField):
+class LocalStorageFileField(BaseField):
 
     proxy_class = FieldFile
 
@@ -68,7 +68,7 @@ class LocalImageField(BaseField):
         self.upload_to = upload_to
         if callable(upload_to):
             self.generate_filename = upload_to
-        super(LocalImageField, self).__init__(**kwargs)
+        super(LocalStorageFileField, self).__init__(**kwargs)
 
     def __get__(self, instance, owner):
         if instance is None:
