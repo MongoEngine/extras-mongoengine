@@ -1,6 +1,6 @@
 from datetime import timedelta
 from mongoengine.base import BaseField
-from mongoengine.fields import StringField, EmailField
+from mongoengine.fields import IntField, StringField, EmailField
 
 import os
 import datetime
@@ -10,7 +10,6 @@ from django.db.models.fields.files import FieldFile
 from django.core.files.base import File
 from django.core.files.storage import default_storage
 
-from mongoengine.connection import get_db, DEFAULT_CONNECTION_NAME
 from django.utils.encoding import force_str, force_text
 
 
@@ -63,7 +62,7 @@ class LocalStorageFileField(BaseField):
                  upload_to='',
                  storage=None,
                  **kwargs):
-        self.size=size
+        self.size = size
         self.storage = storage or default_storage
         self.upload_to = upload_to
         if callable(upload_to):
@@ -73,7 +72,7 @@ class LocalStorageFileField(BaseField):
     def __get__(self, instance, owner):
         if instance is None:
             return self
-        
+
         file = instance._data.get(self.name)
 
         if isinstance(file, str_types) or file is None:
@@ -101,13 +100,16 @@ class LocalStorageFileField(BaseField):
         instance._mark_as_changed(key)
 
     def get_directory_name(self):
-        return os.path.normpath(force_text(datetime.datetime.now().strftime(force_str(self.upload_to))))
+        return os.path.normpath(force_text(
+                datetime.datetime.now().strftime(force_str(self.upload_to))))
 
     def get_filename(self, filename):
-        return os.path.normpath(self.storage.get_valid_name(os.path.basename(filename)))
+        return os.path.normpath(
+                self.storage.get_valid_name(os.path.basename(filename)))
 
     def generate_filename(self, instance, filename):
-        return os.path.join(self.get_directory_name(), self.get_filename(filename))
+        return os.path.join(
+                self.get_directory_name(), self.get_filename(filename))
 
     def to_mongo(self, value):
         if isinstance(value, self.proxy_class):
@@ -137,3 +139,43 @@ class LowerEmailField(LowerStringField):
             self.error('Invalid Mail-address: %s' % value)
         super(LowerEmailField, self).validate(value)
 
+
+class EnumField(object):
+    """
+    A class to register Enum type into mongo
+
+    :param choices: must be of enum type and will be used as possible choices
+    """
+
+    def __init__(self, enum, *args, **kwargs):
+        self.enum = enum
+        kwargs['choices'] = [choice for choice in enum]
+        super(EnumField, self).__init__(*args, **kwargs)
+
+    def __get_value(self, enum):
+        return enum.value if hasattr(enum, 'value') else enum
+
+    def to_python(self, value):
+        return self.enum(super(EnumField, self).to_python(value))
+
+    def to_mongo(self, value):
+        return self.__get_value(value)
+
+    def prepare_query_value(self, op, value):
+        return super(EnumField, self).prepare_query_value(
+                op, self.__get_value(value))
+
+    def validate(self, value):
+        return super(EnumField, self).validate(self.__get_value(value))
+
+    def _validate(self, value, **kwargs):
+        return super(EnumField, self)._validate(
+                self.enum(self.__get_value(value)), **kwargs)
+
+
+class IntEnumField(EnumField, IntField):
+    pass
+
+
+class StringEnumField(EnumField, StringField):
+    pass
