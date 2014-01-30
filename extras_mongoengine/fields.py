@@ -67,9 +67,10 @@ class LowerEmailField(LowerStringField):
 
 class EnumField(object):
     """
-    A class to register Enum type into mongo
+    A class to register Enum type (from the package enum34) into mongo
 
-    :param choices: must be of enum type and will be used as possible choices
+    :param choices: must be of :class:`enum.Enum`: type
+        and will be used as possible choices
     """
 
     def __init__(self, enum, *args, **kwargs):
@@ -99,8 +100,12 @@ class EnumField(object):
 
 
 class IntEnumField(EnumField, IntField):
+    """A variation on :class:`EnumField` for only int containing enumeration.
+    """
     pass
 
 
 class StringEnumField(EnumField, StringField):
+    """A variation on :class:`EnumField` for only string containing enumeration.
+    """
     pass
