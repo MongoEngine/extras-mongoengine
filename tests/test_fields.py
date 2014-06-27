@@ -1,15 +1,12 @@
-import unittest2 as unittest
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
 from datetime import timedelta
 from mongoengine import Document, NotUniqueError, ValidationError, connect
 from mongoengine.connection import get_db
 
-from django.conf import settings
-settings.configure(
-    USE_TZ=True,
-    INSTALLED_APPS=[]
-)
-
-from fields import TimedeltaField, LowerStringField, LowerEmailField
+from extras_mongoengine.fields import TimedeltaField, LowerStringField, LowerEmailField
 
 
 class OldStyleTimedelta(timedelta):
